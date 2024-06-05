@@ -1,0 +1,43 @@
+import spacy
+import nltk
+from nltk.tokenize import sent_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load SpaCy English language model for Named Entity Recognition (NER)
+nlp = spacy.load("en_core_web_sm")
+
+# Sample large text prompt
+large_text_prompt = """
+Your large text prompt goes here.
+"""
+
+# Sample question
+question = "Your question goes here?"
+
+# Tokenize the prompt into sentences
+prompt_sentences = sent_tokenize(large_text_prompt)
+
+# Tokenize the question into sentences
+question_sentences = sent_tokenize(question)
+
+# Calculate TF-IDF vectors for prompt and question sentences
+tfidf_vectorizer = TfidfVectorizer()
+tfidf_matrix = tfidf_vectorizer.fit_transform(prompt_sentences + question_sentences)
+
+# Calculate cosine similarity between question and prompt sentences
+cosine_similarities = cosine_similarity(tfidf_matrix[len(prompt_sentences):], tfidf_matrix[:len(prompt_sentences)])
+
+# Find the most relevant sentence in the prompt for each question sentence
+most_relevant_sentences = []
+for i, question_sentence in enumerate(question_sentences):
+    most_similar_sentence_index = cosine_similarities[i].argmax()
+    most_relevant_sentence = prompt_sentences[most_similar_sentence_index]
+    most_relevant_sentences.append(most_relevant_sentence)
+
+# Output the most relevant sentences for each question sentence
+print("Most relevant sentences for the question:")
+for i, sentence in enumerate(most_relevant_sentences):
+    print(f"Question: {question_sentences[i]}")
+    print(f"Most relevant sentence: {sentence}")
+    print()
