@@ -1,0 +1,53 @@
+import tensorflow as tf
+import tensorflow_text
+import spacy
+
+# Load Universal Sentence Encoder
+use = tf.saved_model.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual/3")
+
+# Load SpaCy for Named Entity Recognition
+nlp = spacy.load("en_core_web_sm")
+
+# Sample large text prompt
+large_text_prompt = """
+Your large text prompt goes here.
+"""
+
+# Tokenize the prompt into sentences
+sentences = nltk.sent_tokenize(large_text_prompt)
+
+# Encode prompt using Universal Sentence Encoder
+prompt_embedding = use(large_text_prompt)
+
+# Define a list of candidate entities
+candidate_entities = ["entity1", "entity2", "entity3"]
+
+# Calculate semantic similarity with USE
+similarities = []
+for entity in candidate_entities:
+    entity_embedding = use(entity)
+    similarity_score = tf.keras.losses.cosine_similarity(prompt_embedding, entity_embedding).numpy()
+    similarities.append((entity, similarity_score))
+
+# Named Entity Recognition with SpaCy
+ner_results = []
+for sentence in sentences:
+    doc = nlp(sentence)
+    for ent in doc.ents:
+        ner_results.append((ent.text, ent.label_))
+
+# Filter out irrelevant entities
+filtered_entities = [entity for entity, score in similarities if score > threshold]
+
+# Combine semantic similarity and NER results
+all_entities = filtered_entities + [entity for entity, label in ner_results]
+
+# Remove duplicates
+unique_entities = list(set(all_entities))
+
+# Rank entities based on scores if needed
+
+# Output the extracted entities
+print("Extracted Entities:")
+for entity in unique_entities:
+    print(entity)
