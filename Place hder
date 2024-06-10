@@ -1,0 +1,24 @@
+// Sample JSON data (usually you'd get this from post.data)
+const postData = {
+  response: "Here is some text with @@@hl@@@python@@@hl@@@ highlighted."
+};
+
+// Function to handle the placeholder
+function handlePlaceholder(input) {
+  const placeholder = '@@@hl@@@';
+  const startTag = '<mark>';  // HTML tag for highlighting
+  const endTag = '</mark>';
+
+  // Replace all occurrences of the placeholder
+  let result = input.split(placeholder);
+  for (let i = 1; i < result.length; i += 2) {
+    result[i] = startTag + result[i] + endTag;
+  }
+  return result.join('');
+}
+
+// Process the JSON data
+postData.response = handlePlaceholder(postData.response);
+
+// Output the processed data
+console.log(postData.response);
