@@ -1,0 +1,14 @@
+function handlePlaceholder(input) {
+  const startPlaceholder = '@@@hl@@@';
+  const endPlaceholder = '@@@endhl@@@';
+  const startTag = '<mark>';  // HTML tag for highlighting
+  const endTag = '</mark>';
+
+  // Replace all occurrences of the placeholders
+  return input.split(startPlaceholder).map(part => {
+    const [highlighted, rest] = part.split(endPlaceholder);
+    return highlighted !== undefined && rest !== undefined
+      ? `${startTag}${highlighted}${endTag}${rest}`
+      : part;
+  }).join('');
+}
