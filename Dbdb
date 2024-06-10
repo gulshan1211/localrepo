@@ -1,0 +1,10 @@
+// Sample JSON data (usually you'd get this from an API response)
+const postData = {
+  response: "@@@hl@@@Python@@@endhl@@@ is the best language."
+};
+
+// Process the JSON data
+postData.response = handlePlaceholder(postData.response);
+
+// Output the processed data
+console.log(postData.response);  // Output: "<mark>Python</mark> is the best language."
