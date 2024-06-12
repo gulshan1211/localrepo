@@ -1,0 +1,45 @@
+import pandas as pd
+import re
+import nltk
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Load data
+data = pd.read_csv('questions.csv')
+questions = data['question'].tolist()
+
+# Download necessary NLTK data
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
+
+stop_words = set(stopwords.words('english'))
+# Define a set of pronouns to remove
+pronouns = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 
+            'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 
+            'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 
+            'itself', 'they', 'them', 'their', 'theirs', 'themselves'}
+
+def preprocess_question(question):
+    # Remove punctuation and special characters
+    question = re.sub(r'[^\w\s]', '', question)
+    # Convert to lowercase
+    question = question.lower()
+    # Tokenize the question
+    question_words = question.split()
+    # Remove stop words and pronouns
+    filtered_words = [word for word in question_words if word not in stop_words and word not in pronouns]
+    return ' '.join(filtered_words)
+
+# Preprocess questions
+preprocessed_questions = [preprocess_question(q) for q in questions]
+
+# Compute TF-IDF vectors
+vectorizer = TfidfVectorizer()
+tfidf_matrix = vectorizer.fit_transform(preprocessed_questions)
+
+# Store vectors
+question_vectors = {i: tfidf_matrix[i].toarray()[0] for i in range(len(preprocessed_questions))}
+vectors_df = pd.DataFrame.from_dict(question_vectors, orient='index')
+vectors_df.to_csv('question_vectors.csv')
+
+print("Preprocessing complete and vectors saved to 'question_vectors.csv'")
