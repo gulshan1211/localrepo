@@ -1,0 +1,29 @@
+import json
+
+def main():
+    data = []
+    while True:
+        question = input("Enter question (or type 'quit' to exit): ")
+        if question.lower() == 'quit':
+            break
+        
+        answer = input("Enter answer: ")
+        url = input("Enter URL: ")
+        tags = input("Enter tags (comma-separated): ").split(',')
+        
+        entry = {
+            "question": question,
+            "answer": answer,
+            "url": url,
+            "tags": [tag.strip() for tag in tags]
+        }
+        
+        data.append(entry)
+    
+    with open('data.json', 'w') as json_file:
+        json.dump(data, json_file, indent=4)
+    
+    print("Data saved to data.json")
+
+if __name__ == "__main__":
+    main()
