@@ -1,0 +1,61 @@
+import json
+import re
+import nltk
+import pandas as pd
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+# Load data from a JSON file
+with open('questions.json', 'r') as file:
+    data = json.load(file)
+
+# Extract questions and corresponding answers from the JSON structure
+questions = [item['question'] for item in data]
+answers = [item['answer'] for item in data]
+
+# Download necessary NLTK data
+nltk.download('stopwords')
+stop_words = set(stopwords.words('english'))
+
+# Define a set of pronouns to remove
+pronouns = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 
+            'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 
+            'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 
+            'itself', 'they', 'them', 'their', 'theirs', 'themselves'}
+
+def preprocess_question(question):
+    # Remove punctuation and special characters
+    question = re.sub(r'[^\w\s]', '', question)
+    # Convert to lowercase
+    question = question.lower()
+    # Tokenize the question
+    question_words = question.split()
+    # Remove stop words and pronouns
+    filtered_words = [word for word in question_words if word not in stop_words and word not in pronouns]
+    return ' '.join(filtered_words)
+
+# Preprocess questions
+preprocessed_questions = [preprocess_question(q) for q in questions]
+
+# Compute TF-IDF vectors for the stored questions
+vectorizer = TfidfVectorizer()
+tfidf_matrix = vectorizer.fit_transform(preprocessed_questions)
+
+def get_best_match_answer(user_question):
+    # Preprocess the user's question
+    preprocessed_user_question = preprocess_question(user_question)
+    # Compute TF-IDF vector for the user's question
+    user_question_vector = vectorizer.transform([preprocessed_user_question])
+    # Compute cosine similarity between user's question vector and stored question vectors
+    cos_similarities = cosine_similarity(user_question_vector, tfidf_matrix)
+    # Find the index of the highest similarity
+    best_match_index = np.argmax(cos_similarities)
+    # Return the answer corresponding to the best-matched question
+    return answers[best_match_index]
+
+# Example usage
+user_question = "How can I learn machine learning?"
+best_answer = get_best_match_answer(user_question)
+print(f"Best Answer: {best_answer}")
