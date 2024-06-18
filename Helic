@@ -1,0 +1,132 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpHeaders;
+import java.util.concurrent.CompletableFuture;
+
+public class ChatBotUI {
+    private static final String API_URL_1 = "http://127.0.0.1:5000/api/send_message";
+    private static final String API_URL_2 = "http://127.0.0.1:5000/api/tfidf_message";
+    private static final String BEARER_TOKEN = "YOUR_BEARER_TOKEN_HERE";  // Replace with your actual token
+
+    private JFrame frame;
+    private JTextField userInputField;
+    private JTextArea chatDisplayArea;
+    private JButton submitButton;
+
+    public ChatBotUI() {
+        frame = new JFrame("ChatBot");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(600, 400);
+
+        chatDisplayArea = new JTextArea();
+        chatDisplayArea.setEditable(false);
+        chatDisplayArea.setLineWrap(true);
+        chatDisplayArea.setWrapStyleWord(true);
+        JScrollPane chatScrollPane = new JScrollPane(chatDisplayArea);
+        frame.add(chatScrollPane, BorderLayout.CENTER);
+
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BorderLayout());
+        userInputField = new JTextField();
+        submitButton = new JButton("Submit");
+
+        inputPanel.add(userInputField, BorderLayout.CENTER);
+        inputPanel.add(submitButton, BorderLayout.EAST);
+        frame.add(inputPanel, BorderLayout.SOUTH);
+
+        userInputField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    handleUserInput();
+                }
+            }
+        });
+
+        submitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                handleUserInput();
+            }
+        });
+
+        displayInitialBotMessage();
+        frame.setVisible(true);
+    }
+
+    private void handleUserInput() {
+        String message = userInputField.getText().trim();
+        if (message.isEmpty()) {
+            return;
+        }
+
+        displayUserMessage(message);
+        userInputField.setText("");
+        showSpinner();
+
+        // Call both APIs
+        CompletableFuture<Void> future1 = fetchResponse(API_URL_1, message);
+        CompletableFuture<Void> future2 = fetchResponse(API_URL_2, message);
+
+        CompletableFuture.allOf(future1, future2).thenRun(() -> hideSpinner());
+    }
+
+    private void displayInitialBotMessage() {
+        chatDisplayArea.append("Bot: Hi, I am here to rescue\n");
+    }
+
+    private void displayUserMessage(String message) {
+        chatDisplayArea.append("Me: " + message + "\n");
+    }
+
+    private void displayBotMessage(String data) {
+        chatDisplayArea.append("Bot: " + data + "\n");
+    }
+
+    private void displayErrorMessage(String errorMsg) {
+        chatDisplayArea.append("Error: " + errorMsg + "\n");
+    }
+
+    private void showSpinner() {
+        // Optional: Implement a loading spinner if desired
+    }
+
+    private void hideSpinner() {
+        // Optional: Implement a loading spinner if desired
+    }
+
+    private CompletableFuture<Void> fetchResponse(String url, String query) {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + BEARER_TOKEN)
+                .header("Accept", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("user_input=" + query))
+                .build();
+
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    if (response.statusCode() == 200) {
+                        displayBotMessage(response.body());
+                    } else {
+                        displayErrorMessage("HTTP error! Status: " + response.statusCode());
+                    }
+                })
+                .exceptionally(e -> {
+                    displayErrorMessage("Unable to get a response from the server. Please try again later.");
+                    return null;
+                });
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(ChatBotUI::new);
+    }
+}
