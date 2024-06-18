@@ -1,0 +1,30 @@
+private void addMessage(String message, boolean isUser) {
+    JPanel messagePanel = new JPanel();
+    messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.Y_AXIS));
+    
+    String sender = isUser ? "Me" : "Bot";
+    JLabel senderLabel = new JLabel(sender);
+    senderLabel.setFont(new Font("Arial", Font.BOLD, 14));
+    senderLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+    
+    JTextPane messageLabel = new JTextPane();
+    messageLabel.setContentType("text/html");
+    messageLabel.setText("<html>" + message.replaceAll("\n", "<br>") + "</html>");
+    messageLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+    messageLabel.setEditable(false);
+    messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    messageLabel.setBackground(isUser ? new Color(87, 130, 187) : new Color(255, 245, 230));
+    messageLabel.setForeground(isUser ? Color.WHITE : Color.DARK_GRAY);
+
+    messagePanel.setAlignmentX(isUser ? Component.LEFT_ALIGNMENT : Component.RIGHT_ALIGNMENT);
+
+    messagePanel.add(senderLabel);
+    messagePanel.add(messageLabel);
+
+    chatPanel.add(messagePanel);
+    chatPanel.revalidate();
+    chatPanel.repaint();
+
+    JScrollBar verticalScrollBar = ((JScrollPane) chatPanel.getParent().getParent()).getVerticalScrollBar();
+    verticalScrollBar.setValue(verticalScrollBar.getMaximum());
+}
