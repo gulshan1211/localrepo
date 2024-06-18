@@ -1,0 +1,151 @@
+package com.example.test1;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.intellij.openapi.ui.SimpleToolWindowPanel;
+import com.intellij.ui.components.JBScrollPane;
+import com.intellij.ui.components.JBTextField;
+import com.intellij.util.ui.JBFont;
+import com.intellij.util.ui.JBUI;
+import com.intellij.ui.JBColor;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
+
+public class MyToolWindow extends SimpleToolWindowPanel {
+    private JPanel chatPanel;
+    private JTextField inputField;
+    private JButton sendButton;
+
+    private static final String API_URL = "http://localhost:5000/api/tfidf_message";
+    private static final String BEARER_TOKEN = "YOUR_BEARER_TOKEN_HERE"; // Replace with your actual token
+
+    public MyToolWindow() {
+        super(true, true);
+
+        chatPanel = new JPanel();
+        chatPanel.setLayout(new BoxLayout(chatPanel, BoxLayout.Y_AXIS));
+        JScrollPane chatScrollPane = new JBScrollPane(chatPanel);
+        chatScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+
+        inputField = new JBTextField(20);
+        inputField.setToolTipText("Enter your message here");
+        bottomPanel.add(inputField, BorderLayout.CENTER);
+
+        sendButton = new JButton("Send");
+        sendButton.setToolTipText("Click to send your message");
+        sendButton.setFont(JBFont.label().asBold());
+        bottomPanel.add(sendButton, BorderLayout.EAST);
+
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+        inputField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+
+        this.add(chatScrollPane, BorderLayout.CENTER);
+        this.add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private void sendMessage() {
+        String inputText = inputField.getText().trim();
+        if (!inputText.isEmpty()) {
+            addMessage("User", inputText, true); // Add user message
+            inputField.setText(""); // Clear input field
+
+            // Make API call to retrieve reply
+            try {
+                URL url = new URL(API_URL);
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                con.setRequestMethod("POST");
+                con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                con.setRequestProperty("Authorization", "Bearer " + BEARER_TOKEN);
+                con.setDoOutput(true);
+
+                String postData = "question=" + inputText;
+                try (OutputStream os = con.getOutputStream()) {
+                    byte[] input = postData.getBytes(StandardCharsets.UTF_8);
+                    os.write(input, 0, input.length);
+                }
+
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
+                    String response = br.lines().collect(Collectors.joining(System.lineSeparator()));
+                    // Process the JSON response
+                    processApiResponse(response);
+                }
+
+                con.disconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+                addMessage("Bot", "Error: Could not retrieve response from server", false);
+            }
+        }
+    }
+
+    private void processApiResponse(String response) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(response);
+
+            String answer = rootNode.get("answer").asText(); // Extract the "answer" field from JSON
+
+            addMessage("Bot", answer, false); // Add received message to chatPanel (assuming it's a response message)
+        } catch (IOException e) {
+            e.printStackTrace();
+            addMessage("Bot", "Error: Could not process API response", false);
+        }
+    }
+
+    private void addMessage(String sender, String message, boolean isUser) {
+        JPanel messagePanel = new JPanel();
+        messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.Y_AXIS));
+        messagePanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        JLabel senderLabel = new JLabel(sender);
+        senderLabel.setFont(JBFont.label().asBold());
+        senderLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+
+        JTextPane messagePane = new JTextPane();
+        messagePane.setContentType("text/html");
+        messagePane.setText("<html>" + message.replaceAll("\n", "<br>") + "</html>");
+        messagePane.setFont(JBFont.label());
+        messagePane.setEditable(false);
+        messagePane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        messagePane.setBackground(isUser ? JBColor.namedColor("UserMessageBackground", new Color(173, 216, 230)) : JBColor.namedColor("BotMessageBackground", Color.WHITE));
+
+        if (isUser) {
+            messagePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        } else {
+            messagePanel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        }
+
+        messagePanel.add(senderLabel);
+        messagePanel.add(messagePane);
+
+        chatPanel.add(messagePanel);
+        chatPanel.revalidate();
+        chatPanel.repaint();
+
+        JScrollBar verticalScrollBar = ((JScrollPane) chatPanel.getParent().getParent()).getVerticalScrollBar();
+        verticalScrollBar.setValue(verticalScrollBar.getMaximum());
+    }
+}
