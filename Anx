@@ -1,0 +1,24 @@
+import numpy as np
+
+# Load the saved word vectors (embeddings)
+word_vectors = np.load('word_vectors.npy')
+
+# Function to get embedding vector for a specific word
+def get_embedding(word, word_index, word_vectors):
+    if word in word_index:
+        word_idx = word_index[word]
+        return word_vectors[word_idx]
+    else:
+        return None
+
+# Example usage:
+word_index = tokenizer.word_index  # Assuming tokenizer is already defined
+word = 'sample'  # Replace with any word you want to get the embedding for
+
+# Get embedding vector for the word
+embedding_vector = get_embedding(word, word_index, word_vectors)
+
+if embedding_vector is not None:
+    print(f"Embedding vector for '{word}': {embedding_vector}")
+else:
+    print(f"No embedding found for '{word}'")
