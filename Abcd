@@ -1,0 +1,53 @@
+import nltk
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+# Download NLTK resources (uncomment if needed)
+# nltk.download('punkt')
+# nltk.download('stopwords')
+# nltk.download('averaged_perceptron_tagger')
+
+# Example sentence
+sentence = "The quick brown foxes are jumping over the lazy dogs"
+
+# Tokenize the sentence
+tokens = word_tokenize(sentence)
+
+# Perform POS tagging
+pos_tags = nltk.pos_tag(tokens)
+
+# Initialize lemmatizer
+lemmatizer = WordNetLemmatizer()
+
+# Function to convert POS tags to WordNet POS tags
+def get_wordnet_pos(tag):
+    if tag.startswith('J'):
+        return wordnet.ADJ
+    elif tag.startswith('V'):
+        return wordnet.VERB
+    elif tag.startswith('N'):
+        return wordnet.NOUN
+    elif tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return wordnet.NOUN  # default to noun if tag is not found
+
+# Lemmatize each word based on its POS tag
+lemmas = []
+for word, tag in pos_tags:
+    wn_tag = get_wordnet_pos(tag)
+    lemma = lemmatizer.lemmatize(word, pos=wn_tag)
+    lemmas.append(lemma)
+
+# Get English stop words from NLTK
+stop_words = set(stopwords.words('english'))
+
+# Remove stop words from lemmas
+filtered_lemmas = [lemma for lemma in lemmas if lemma.lower() not in stop_words]
+
+# Join the remaining words to form the processed sentence
+processed_sentence = ' '.join(filtered_lemmas)
+
+print("Original Sentence:", sentence)
+print("Processed Sentence:", processed_sentence)
