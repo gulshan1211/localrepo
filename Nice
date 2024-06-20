@@ -1,0 +1,76 @@
+import tensorflow as tf
+import numpy as np
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import skipgrams
+
+# Sample data
+sentences = ["this is a sample sentence", "word2vec is an interesting model"]
+
+# Tokenize the sentences
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(sentences)
+sequences = tokenizer.texts_to_sequences(sentences)
+word_index = tokenizer.word_index
+vocab_size = len(word_index) + 1
+
+# Generate skip-grams
+skip_grams = [skipgrams(sequence, vocabulary_size=vocab_size, window_size=5) for sequence in sequences]
+
+# Flatten the skip-grams
+pairs, labels = [], []
+for sg in skip_grams:
+    if sg is None:
+        continue
+    pair, label = sg
+    pairs.extend(pair)
+    labels.extend(label)
+
+pairs = np.array(pairs)
+labels = np.array(labels)
+
+# Define the Word2Vec model with enhanced architecture
+embedding_dim = 100
+hidden_units = 128  # Number of units in the hidden layer
+
+# Inputs for target and context words
+input_target = tf.keras.layers.Input((1,))
+input_context = tf.keras.layers.Input((1,))
+
+# Embedding layer
+embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim, input_length=1, name='embedding')
+target = embedding(input_target)
+target = tf.keras.layers.Reshape((embedding_dim,))(target)
+context = embedding(input_context)
+context = tf.keras.layers.Reshape((embedding_dim,))(context)
+
+# Hidden layers
+hidden_layer1 = tf.keras.layers.Dense(hidden_units, activation='relu')(tf.keras.layers.concatenate([target, context]))
+hidden_layer2 = tf.keras.layers.Dense(hidden_units // 2, activation='relu')(hidden_layer1)
+
+# Output layer
+output = tf.keras.layers.Dense(1, activation='sigmoid')(hidden_layer2)
+
+# Model creation
+model = tf.keras.models.Model(inputs=[input_target, input_context], outputs=output)
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Train the model
+target_input = pairs[:, 0]
+context_input = pairs[:, 1]
+
+model.fit([target_input, context_input], labels, epochs=10, batch_size=64)
+
+# Get the embedding weights
+word_vectors = model.get_layer('embedding').get_weights()[0]
+
+# Save the embeddings
+np.save('word_vectors.npy', word_vectors)
+
+# To use the embeddings:
+word_vectors = np.load('word_vectors.npy')
+
+# Example of how to use the trained embeddings
+word = 'word2vec'
+word_idx = word_index[word]
+word_embedding = word_vectors[word_idx]
+print(f"Embedding for '{word}':\n{word_embedding}")
