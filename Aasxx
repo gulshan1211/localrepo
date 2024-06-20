@@ -1,0 +1,14 @@
+import numpy as np
+
+# Load the saved word vectors (embeddings)
+word_vectors = np.load('word_vectors.npy')
+
+# Normalize each embedding vector
+norms = np.linalg.norm(word_vectors, axis=1, keepdims=True)
+word_vectors_normalized = word_vectors / norms
+
+# Save the normalized embeddings if needed
+np.save('word_vectors_normalized.npy', word_vectors_normalized)
+
+# To use the normalized embeddings:
+word_vectors_normalized = np.load('word_vectors_normalized.npy')
