@@ -1,0 +1,51 @@
+.popup-message {
+  position: absolute;
+  background-color: var(--vscode-editorWidget-background);
+  color: var(--vscode-editorWidget-foreground);
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 5px;
+  padding: 10px;
+  z-index: 10;
+  visibility: hidden;
+}
+
+
+function showPopupMessage(event, message) {
+    let popup = document.createElement('div');
+    popup.classList.add('popup-message');
+    popup.textContent = message;
+
+    document.body.appendChild(popup);
+
+    let buttonRect = event.target.getBoundingClientRect();
+    popup.style.top = `${buttonRect.bottom + window.scrollY + 10}px`;
+    popup.style.left = `${buttonRect.left + window.scrollX}px`;
+
+    popup.style.visibility = 'visible';
+
+    setTimeout(() => {
+        popup.style.visibility = 'hidden';
+        document.body.removeChild(popup);
+    }, 3000);
+}
+
+
+function display_answer_url(answer, link = '') {
+    const chatWindow = document.getElementById('display');
+    const botMessageDiv = document.createElement('div');
+    botMessageDiv.classList.add('message', 'bot-message');
+    let messageContent = `<strong>Bot:</strong><br>${answer}`;
+    if (link) {
+        messageContent += `<br><a href="${link}" target="_blank">Read more</a><br><button class="relevant-button">Relevant</button>`;
+    }
+    botMessageDiv.innerHTML = messageContent;
+    chatWindow.prepend(botMessageDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    // Add event listener for the relevant button
+    const relevantButton = botMessageDiv.querySelector('.relevant-button');
+    if (relevantButton) {
+        relevantButton.addEventListener('click', () => sendRelevantData(query, answer, link));
+        relevantButton.addEventListener('click', (event) => showPopupMessage(event, 'Thank you for your feedback!'));
+    }
+}
