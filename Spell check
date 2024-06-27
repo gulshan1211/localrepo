@@ -1,0 +1,52 @@
+import pickle
+from nltk import bigrams
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import CountVectorizer
+import numpy as np
+
+# Function to calculate Jaccard similarity between two sets
+def jaccard_similarity(set1, set2):
+    intersection = len(set1.intersection(set2))
+    union = len(set1.union(set2))
+    return intersection / union
+
+# Load your vectorizer and get the vocabulary
+with open('path_to_your_vectorizer.pkl', 'rb') as file:
+    vectorizer = pickle.load(file)
+
+vocabulary = vectorizer.vocabulary_
+vocab_words = set(vocabulary.keys())
+
+def spell_check(sentence, vocab_words, similarity_threshold=0.8):
+    tokens = word_tokenize(sentence)
+    corrected_sentence = []
+
+    for word in tokens:
+        if word in vocab_words:
+            corrected_sentence.append(word)
+        else:
+            # Generate bigrams for the word
+            word_bigrams = set(bigrams(word))
+            best_match = None
+            best_similarity = 0
+
+            for vocab_word in vocab_words:
+                vocab_word_bigrams = set(bigrams(vocab_word))
+                similarity = jaccard_similarity(word_bigrams, vocab_word_bigrams)
+                
+                if similarity > best_similarity:
+                    best_similarity = similarity
+                    best_match = vocab_word
+            
+            if best_similarity >= similarity_threshold:
+                corrected_sentence.append(best_match)
+            else:
+                corrected_sentence.append(word)
+    
+    return ' '.join(corrected_sentence)
+
+# Example usage
+sentence = "Ths is a smple senence with eror"
+corrected_sentence = spell_check(sentence, vocab_words)
+print("Original sentence:", sentence)
+print("Corrected sentence:", corrected_sentence)
